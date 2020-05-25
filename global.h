@@ -1,6 +1,8 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
+#include <QString>
+
 enum PacketType
 {
     TYPE_NONE = 0,
