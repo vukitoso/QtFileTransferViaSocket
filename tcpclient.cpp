@@ -150,6 +150,7 @@ void TcpClient::socketSendMessageFile_block()
             QByteArray data = file.read(1024*250);
 //            QByteArray data = file.read(1024*1000*10);
             stream << data;
+//            m_pTcpSocket->waitForBytesWritten();
             countSend++;
         }
         qDebug() << Tools::getTime() << "_CLIENT: ------------------------ countSend FINAL: " << countSend;
