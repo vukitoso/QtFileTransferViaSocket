@@ -12,7 +12,6 @@ MyTcpServer::MyTcpServer(QObject *parent) : QObject(parent)
     fileSize = 0;
     testStr.clear();
     sizeReceivedData = 0;
-    length = 0;
     tmpBlock.clear();
     countSend = 0;
 
@@ -145,7 +144,6 @@ void MyTcpServer::slotReadyRead()
 //                    qDebug() << Tools::getTime() << "SERVER: sizeReceivedData: " << sizeReceivedData;
 //                    qDebug() << Tools::getTime() << "SERVER: -------------------------------------------------" << endl;
 
-                    length = 0;
                     tmpBlock.clear();
 
                     if (sizeReceivedData == fileSize)
