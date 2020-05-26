@@ -34,7 +34,6 @@ private:
     QString filePath;
     qint64 fileSize;
     QString testStr;
-    qint64 length;
     QByteArray tmpBlock;
     int countSend;
 };
