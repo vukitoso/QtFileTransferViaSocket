@@ -11,6 +11,7 @@ TcpClient::TcpClient()
     m_nNextBlockSize = 0;
     countSend = 0;
     sizeSendData = 0;
+    fileSize = 0;
 }
 
 TcpClient::~TcpClient()
@@ -96,6 +97,7 @@ void TcpClient::sendPartOfFile()
         QByteArray data = sendFile->read(1024*250);
 //        QByteArray data = sendFile->read(1024*1000*10);
         stream << data;
+        m_pTcpSocket->waitForBytesWritten();
 //        qDebug() << Tools::getTime() << "_CLIENT: slot sendPartOfFile() | write data";
     } else {
         qDebug() << Tools::getTime() << "_CLIENT: slot sendPartOfFile() | File end!";
@@ -150,7 +152,7 @@ void TcpClient::socketSendMessageFile_block()
             QByteArray data = file.read(1024*250);
 //            QByteArray data = file.read(1024*1000*10);
             stream << data;
-//            m_pTcpSocket->waitForBytesWritten();
+            m_pTcpSocket->waitForBytesWritten();
             countSend++;
         }
         qDebug() << Tools::getTime() << "_CLIENT: ------------------------ countSend FINAL: " << countSend;
