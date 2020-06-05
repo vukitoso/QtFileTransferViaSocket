@@ -5,4 +5,4 @@
 
 TcpClient::socketSendMessageFile() - Асинхронная отправка данных
 
-TcpClient::socketSendMessageFile_block() - Блокирующая сокет??? (или нет, хз)
+TcpClient::socketSendMessageFile_block() - Блокирующая сокет отправка
