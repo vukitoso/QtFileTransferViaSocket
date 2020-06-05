@@ -12,7 +12,7 @@ class TcpClient : public QObject
     Q_OBJECT
 
 public:
-    TcpClient();
+    TcpClient(const QString &serverHost, const quint16 &serverPort);
     ~TcpClient();
 
 private:
@@ -22,6 +22,8 @@ private:
     qint64 fileSize;
     qint64 sizeSendData;
     QFile *sendFile;
+    QString serverHost;
+    quint16 serverPort;
 
     void socketSendMessageFile_block();
     void socketSendMessageFile();
@@ -31,9 +33,10 @@ signals:
     void endSendFile();
 
 private slots:
-    void slotReadyRead   (                            );
-    void slotError       (QAbstractSocket::SocketError);
-    void slotConnected   (                            );
+    void slotReadyRead ();
+    void slotError (QAbstractSocket::SocketError);
+    void slotConnected ();
+    void slotDisconnected();
     void sendPartOfFile();
     void slotEndSendFile();
 

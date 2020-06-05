@@ -25,8 +25,8 @@ private slots:
     void slotReadyRead();
 
 private:
-    QTcpServer * mTcpServer;
-    QTcpSocket * mTcpSocket;
+    QTcpServer *mTcpServer;
+    QTcpSocket *mTcpSocket;
     qint64 sizeReceivedData;
     QString fileCopy; // Путь файла для сохранение
     PacketType packetType;

@@ -6,8 +6,10 @@
 #include <QFileInfo>
 
 
-TcpClient::TcpClient()
+TcpClient::TcpClient(const QString &serverHost, const quint16 &serverPort)
+    : serverHost(serverHost), serverPort(serverPort)
 {
+    qDebug() << Tools::getTime() << "_CLIENT: TcpClient::TcpClient()";
     m_nNextBlockSize = 0;
     countSend = 0;
     sizeSendData = 0;
@@ -24,19 +26,23 @@ TcpClient::~TcpClient()
 void TcpClient::startClient()
 {
     m_pTcpSocket = new QTcpSocket(this);
-
-    QString ip("127.0.0.1");
-    m_pTcpSocket->connectToHost(ip, 1111); // 127.0.0.1
+    m_pTcpSocket->connectToHost(serverHost, serverPort);
 
     connect(m_pTcpSocket, SIGNAL(connected()), SLOT(slotConnected()));
     connect(m_pTcpSocket, SIGNAL(readyRead()), SLOT(slotReadyRead()));
+    connect(m_pTcpSocket, SIGNAL(disconnected()), SLOT(slotDisconnected()));
     connect(m_pTcpSocket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(slotError(QAbstractSocket::SocketError)));
 }
 
 void TcpClient::slotConnected()
 {
-    this->socketSendMessageFile(); // Асинхронная отправка
-//    this->socketSendMessageFile_block(); // Блокирующая сокет отправка
+//    this->socketSendMessageFile(); // Асинхронная отправка
+    this->socketSendMessageFile_block(); // Блокирующая сокет отправка
+}
+
+void TcpClient::slotDisconnected()
+{
+    qDebug() << "_CLIENT: slotDisconnected";
 }
 
 void TcpClient::slotReadyRead()
@@ -75,6 +81,9 @@ void TcpClient::socketSendMessageFile()
 
     stream << fileName;
     stream << fileSize;
+    qDebug() << Tools::getTime() << "_CLIENT: fileSize - wait";
+    m_pTcpSocket->waitForBytesWritten();
+    qDebug() << Tools::getTime() << "_CLIENT: fileSize";
 
     sendFile = new QFile(fileName);
 
@@ -90,6 +99,8 @@ void TcpClient::socketSendMessageFile()
 
 void TcpClient::sendPartOfFile()
 {
+//    QThread::msleep(200);
+
     QDataStream stream(m_pTcpSocket);
     stream.setVersion(QDataStream::Qt_DefaultCompiledVersion);
 
@@ -97,9 +108,9 @@ void TcpClient::sendPartOfFile()
         QByteArray data = sendFile->read(1024*250);
 //        QByteArray data = sendFile->read(1024*1000*10);
         stream << data;
-        m_pTcpSocket->waitForBytesWritten();
 //        qDebug() << Tools::getTime() << "_CLIENT: slot sendPartOfFile() | write data";
-    } else {
+    }
+    else {
         qDebug() << Tools::getTime() << "_CLIENT: slot sendPartOfFile() | File end!";
         sendFile->close();
         sendFile = NULL;
@@ -111,7 +122,7 @@ void TcpClient::sendPartOfFile()
     }
 
     countSend++;
-    qDebug() << Tools::getTime() << "_CLIENT: slot sendPartOfFile() | countSend++" << "countSend:" << countSend;
+//    qDebug() << Tools::getTime() << "_CLIENT: slot sendPartOfFile() | countSend++" << "countSend:" << countSend;
 }
 
 
@@ -126,6 +137,11 @@ void TcpClient::slotEndSendFile()
 
     QString testStr("TEST_MESSAGE");
     stream << testStr;
+    qDebug() << Tools::getTime() << "_CLIENT: TcpClient::slotEndSendFile() | write TEST_MESSAGE - wait";
+
+    m_pTcpSocket->waitForBytesWritten();
+
+    qDebug() << Tools::getTime() << "_CLIENT: TcpClient::slotEndSendFile() | write TEST_MESSAGE";
 }
 
 
@@ -142,18 +158,21 @@ void TcpClient::socketSendMessageFile_block()
     QFileInfo fileInfo(file);
     fileSize = fileInfo.size();
 
-    stream << fileName;
-    stream << fileSize;
+    stream << fileName << fileSize;
+    m_pTcpSocket->waitForBytesWritten();
 
     if (file.open(QFile::ReadOnly))
     {
         while(!file.atEnd())
         {
-            QByteArray data = file.read(1024*250);
+//            QByteArray data = file.read(500);
+            QByteArray data = file.read(1024*25);
 //            QByteArray data = file.read(1024*1000*10);
             stream << data;
             m_pTcpSocket->waitForBytesWritten();
             countSend++;
+
+//            qDebug() << Tools::getTime() << "_CLIENT: write:" << data.size() << "countSend:" << countSend;
         }
         qDebug() << Tools::getTime() << "_CLIENT: ------------------------ countSend FINAL: " << countSend;
     }
@@ -164,5 +183,8 @@ void TcpClient::socketSendMessageFile_block()
 
     QString testStr("TEST_MESSAGE");
     stream << testStr;
+    m_pTcpSocket->waitForBytesWritten();
+
+    qDebug() << Tools::getTime() << "_CLIENT: write TEST_MESSAGE";
 }
 

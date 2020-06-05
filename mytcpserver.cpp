@@ -26,7 +26,7 @@ void MyTcpServer::startServer()
     mTcpServer = new QTcpServer(this);
     connect(mTcpServer, &QTcpServer::newConnection, this, &MyTcpServer::slotNewConnection);
 
-    if(!mTcpServer->listen(QHostAddress::Any, 1111)){
+    if(!mTcpServer->listen(QHostAddress::AnyIPv4, 1111)) {
         qFatal("SERVER: server is not started");
     }
 
@@ -36,8 +36,8 @@ void MyTcpServer::startServer()
 MyTcpServer::~MyTcpServer()
 {
     qDebug() << "MyTcpServer::~MyTcpServer()";
-    delete mTcpServer;
     delete mTcpSocket;
+    delete mTcpServer;
 }
 
 void MyTcpServer::slotNewConnection()
@@ -61,8 +61,8 @@ void MyTcpServer::slotReadyRead()
     if (!mTcpSocket || !mTcpSocket->bytesAvailable())
         return;
 
-    qDebug() << Tools::getTime() << "SERVER: --------------------new-----------------------";
-    qDebug() << Tools::getTime() << "SERVER: onSocketReceiveMessage: bytesAvailable" << mTcpSocket->bytesAvailable();
+//    qDebug() << Tools::getTime() << "SERVER: --------------------new-----------------------";
+//    qDebug() << Tools::getTime() << "SERVER: slotReadyRead(): bytesAvailable" << mTcpSocket->bytesAvailable();
 
     QDataStream stream(mTcpSocket);
     stream.setVersion(QDataStream::Qt_DefaultCompiledVersion);
@@ -131,23 +131,27 @@ void MyTcpServer::slotReadyRead()
                     stream.startTransaction();
                     stream >> tmpBlock;
                     if (!stream.commitTransaction()) {
-                        qDebug() << Tools::getTime() << "SERVER: tmpBlock - FAIL commitTransaction";
+//                        qDebug() << Tools::getTime() << "SERVER: tmpBlock - FAIL commitTransaction";
                         break;
                     }
 
                     qint64 toFile = file.write(tmpBlock);
-                    qDebug() << Tools::getTime() << "SERVER: toFile    : " << toFile;
+//                    qDebug() << Tools::getTime() << "SERVER: toFile    : " << toFile;
 
                     sizeReceivedData += toFile;
                     countSend++;
-                    qDebug() << Tools::getTime() << "SERVER: countSend: " << countSend;
+//                    qDebug() << Tools::getTime() << "SERVER: countSend: " << countSend;
 //                    qDebug() << Tools::getTime() << "SERVER: sizeReceivedData: " << sizeReceivedData;
 //                    qDebug() << Tools::getTime() << "SERVER: -------------------------------------------------" << endl;
 
                     tmpBlock.clear();
 
-                    if (sizeReceivedData == fileSize)
+                    if (sizeReceivedData == fileSize) {
+                        qDebug() << Tools::getTime() << "SERVER: sizeReceivedData END: " << sizeReceivedData;
+                        qDebug() << Tools::getTime() << "SERVER fileSize ORIG:" << fileSize;
+                        qDebug() << Tools::getTime() << "SERVER: countSend FINAL: " << countSend;
                         break;
+                    }
 
                 } // while (!stream.atEnd())
 
@@ -157,11 +161,6 @@ void MyTcpServer::slotReadyRead()
 
             if (sizeReceivedData != fileSize)
                 return;
-
-            qDebug() << Tools::getTime() << "SERVER: sizeReceivedData END: " << sizeReceivedData;
-            qDebug() << Tools::getTime() << "SERVER fileSize ORIG:" << fileSize;
-            qDebug() << "SERVER: countSend FINAL: " << countSend;
-
 
             //====================================================
             // Получение testStr

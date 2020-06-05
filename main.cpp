@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
 
     QThread::msleep(100);
 
-    TcpClient *client = new TcpClient;
+    TcpClient *client = new TcpClient("127.0.0.1", 1111);
     QThread *threadClient = new QThread;
     QObject::connect(threadClient, &QThread::started, client, &TcpClient::startClient);
     QObject::connect(threadClient, &QThread::finished, client, &TcpClient::deleteLater);
