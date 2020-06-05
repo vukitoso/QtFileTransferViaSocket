@@ -79,9 +79,7 @@ void TcpClient::socketSendMessageFile()
     QFileInfo fileInfo(file);
     fileSize = fileInfo.size();
 
-    stream << fileName;
-    stream << fileSize;
-    qDebug() << Tools::getTime() << "_CLIENT: fileSize - wait";
+    stream << fileName << fileSize;
     m_pTcpSocket->waitForBytesWritten();
     qDebug() << Tools::getTime() << "_CLIENT: fileSize";
 
@@ -137,8 +135,6 @@ void TcpClient::slotEndSendFile()
 
     QString testStr("TEST_MESSAGE");
     stream << testStr;
-    qDebug() << Tools::getTime() << "_CLIENT: TcpClient::slotEndSendFile() | write TEST_MESSAGE - wait";
-
     m_pTcpSocket->waitForBytesWritten();
 
     qDebug() << Tools::getTime() << "_CLIENT: TcpClient::slotEndSendFile() | write TEST_MESSAGE";
