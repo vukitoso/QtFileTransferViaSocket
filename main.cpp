@@ -8,7 +8,7 @@ int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
 
-    MyTcpServer *server = new MyTcpServer;
+    MyTcpServer *server = new MyTcpServer(1111);
     QThread *threadServer = new QThread;
     QObject::connect(threadServer, &QThread::started, server, &MyTcpServer::startServer);
     QObject::connect(threadServer, &QThread::finished, server, &MyTcpServer::deleteLater);

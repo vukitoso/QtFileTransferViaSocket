@@ -13,7 +13,7 @@ class MyTcpServer : public QObject
     Q_OBJECT
 
 public:
-    explicit MyTcpServer(QObject *parent = nullptr);
+    explicit MyTcpServer(const quint16 &serverPort, QObject *parent = nullptr);
     ~MyTcpServer();
 
 public slots:
@@ -23,10 +23,12 @@ private slots:
     void slotNewConnection();
     void slotClientDisconnected();
     void slotReadyRead();
+    void slotReadyRead_block();
 
 private:
     QTcpServer *mTcpServer;
     QTcpSocket *mTcpSocket;
+    quint16 serverPort;
     qint64 sizeReceivedData;
     QString fileCopy; // Путь файла для сохранение
     PacketType packetType;
