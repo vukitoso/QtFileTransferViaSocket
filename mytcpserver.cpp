@@ -210,12 +210,14 @@ void MyTcpServer::slotReadyRead_block()
 
     forever
     {
-        if (!mTcpSocket->bytesAvailable()) {
+        qDebug() << Tools::getTime() << "SERVER: forever -------: bytesAvailable" << mTcpSocket->bytesAvailable();
+
+//        if (!mTcpSocket->bytesAvailable()) {
             if (!mTcpSocket->waitForReadyRead(1000)) {
                 qDebug() << Tools::getTime() << "SERVER: ERROR! readyRead timeout - forever!!!";
                 continue;
             }
-        }
+//        }
 
         // Считывание PacketType
         if (packetType == PacketType::TYPE_NONE) {
@@ -270,54 +272,89 @@ void MyTcpServer::slotReadyRead_block()
                 QFile file(filePath);
                 file.open(QFile::Append);
 
-                if (!mTcpSocket->waitForReadyRead(5000)) {
-                    qDebug() << Tools::getTime() << "SERVER: ERROR! readyRead timeout";
-                    //emit readFail();
-                    continue;
-                }
-
                 qDebug() << Tools::getTime() << "SERVER: FILE bytesAvailable" << mTcpSocket->bytesAvailable();
 
-                // Работа с файлом в цикле "пока в сокете есть данные"
-                while (!stream.atEnd())
+                while (sizeReceivedData < fileSize)
                 {
-                    qDebug() << Tools::getTime() << "SERVER: while (!stream.atEnd())";
-                    //====================================================
-                    // Получение tmpBlock
+                    qDebug() << Tools::getTime() << "SERVER: FILE while -------: bytesAvailable" << mTcpSocket->bytesAvailable();
 
-                    stream.startTransaction();
-                    stream >> tmpBlock;
-                    if (!stream.commitTransaction()) {
-                        qDebug() << Tools::getTime() << "SERVER: tmpBlock - FAIL commitTransaction";
-                        break;
+//                    if (!mTcpSocket->bytesAvailable()) {
+                        if (!mTcpSocket->waitForReadyRead(1000)) {
+                            qDebug() << Tools::getTime() << "SERVER: ERROR! readyRead timeout - forever!!!";
+                            continue;
+                        }
+//                    }
+
+                    while (!stream.atEnd())
+                    {
+                        stream.startTransaction();
+                        stream >> tmpBlock;
+                        if (!stream.commitTransaction()) {
+                            qDebug() << Tools::getTime() << "SERVER: tmpBlock - FAIL commitTransaction";
+                            break;
+                        }
+
+                        qint64 toFile = file.write(tmpBlock);
+                        qDebug() << Tools::getTime() << "SERVER: toFile    : " << toFile;
+
+                        sizeReceivedData += toFile;
+                        countSend++;
+                        qDebug() << Tools::getTime() << "SERVER: countSend: " << countSend;
+                        qDebug() << Tools::getTime() << "SERVER: sizeReceivedData: " << sizeReceivedData;
+                        qDebug() << Tools::getTime() << "SERVER: -------------------------------------------------" << endl;
+
+                        tmpBlock.clear();
+
+                        if (sizeReceivedData == fileSize) {
+                            qDebug() << Tools::getTime() << "SERVER: sizeReceivedData END: " << sizeReceivedData;
+                            qDebug() << Tools::getTime() << "SERVER: fileSize ORIG:" << fileSize;
+                            qDebug() << Tools::getTime() << "SERVER: countSend FINAL: " << countSend;
+                            break;
+                        }
                     }
+                }
 
-                    qint64 toFile = file.write(tmpBlock);
-                    qDebug() << Tools::getTime() << "SERVER: toFile    : " << toFile;
+//                // Работа с файлом в цикле "пока в сокете есть данные"
+//                while (!stream.atEnd())
+//                {
+//                    qDebug() << Tools::getTime() << "SERVER: while (!stream.atEnd())";
+//                    //====================================================
+//                    // Получение tmpBlock
 
-                    sizeReceivedData += toFile;
-                    countSend++;
-                    qDebug() << Tools::getTime() << "SERVER: countSend: " << countSend;
-                    qDebug() << Tools::getTime() << "SERVER: sizeReceivedData: " << sizeReceivedData;
-                    qDebug() << Tools::getTime() << "SERVER: -------------------------------------------------" << endl;
+//                    stream.startTransaction();
+//                    stream >> tmpBlock;
+//                    if (!stream.commitTransaction()) {
+//                        qDebug() << Tools::getTime() << "SERVER: tmpBlock - FAIL commitTransaction";
+//                        break;
+//                    }
 
-                    tmpBlock.clear();
+//                    qint64 toFile = file.write(tmpBlock);
+//                    qDebug() << Tools::getTime() << "SERVER: toFile    : " << toFile;
 
-                    if (sizeReceivedData == fileSize) {
-                        qDebug() << Tools::getTime() << "SERVER: sizeReceivedData END: " << sizeReceivedData;
-                        qDebug() << Tools::getTime() << "SERVER fileSize ORIG:" << fileSize;
-                        qDebug() << Tools::getTime() << "SERVER: countSend FINAL: " << countSend;
-                        break;
-                    }
+//                    sizeReceivedData += toFile;
+//                    countSend++;
+//                    qDebug() << Tools::getTime() << "SERVER: countSend: " << countSend;
+//                    qDebug() << Tools::getTime() << "SERVER: sizeReceivedData: " << sizeReceivedData;
+//                    qDebug() << Tools::getTime() << "SERVER: -------------------------------------------------" << endl;
 
-                } // while (!stream.atEnd())
+//                    tmpBlock.clear();
+
+//                    if (sizeReceivedData == fileSize) {
+//                        qDebug() << Tools::getTime() << "SERVER: sizeReceivedData END: " << sizeReceivedData;
+//                        qDebug() << Tools::getTime() << "SERVER: fileSize ORIG:" << fileSize;
+//                        qDebug() << Tools::getTime() << "SERVER: countSend FINAL: " << countSend;
+//                        break;
+//                    }
+
+//                } // while (!stream.atEnd())
 
                 file.close();
+                qDebug() << Tools::getTime() << "SERVER: file.close()";
 
             } // if (sizeReceivedData != fileSize)
 
-            if (sizeReceivedData != fileSize)
-                continue;
+//            if (sizeReceivedData != fileSize)
+//                continue;
 
             //====================================================
             // Получение testStr
