@@ -70,129 +70,127 @@ void MyTcpServer::slotReadyRead()
     QDataStream stream(mTcpSocket);
     stream.setVersion(QDataStream::Qt_DefaultCompiledVersion);
 
-//    while (!mTcpSocket->atEnd())
-//    {
-        // Считывание PacketType
-        if (packetType == PacketType::TYPE_NONE) {
+    // Считывание PacketType
+    if (packetType == PacketType::TYPE_NONE) {
+        stream.startTransaction();
+        stream >> packetType;
+        if (!stream.commitTransaction()) {
+            qDebug() << Tools::getTime() << "SERVER: packetType - FAIL commitTransaction";
+            return;
+        }
+        qDebug() << Tools::getTime() << "SERVER: type:" << packetType;
+    }
+
+    if (packetType == PacketType::TYPE_MSG)
+    {
+        //
+    }
+    else if (packetType == PacketType::TYPE_FILE)
+    {
+        //====================================================
+        // Получение filePath
+
+        if (filePath.isEmpty()) {
             stream.startTransaction();
-            stream >> packetType;
+            stream >> filePath;
             if (!stream.commitTransaction()) {
-                qDebug() << Tools::getTime() << "SERVER: packetType - FAIL commitTransaction";
+                qDebug() << Tools::getTime() << "SERVER: filePath - FAIL commitTransaction";
                 return;
             }
-            qDebug() << Tools::getTime() << "SERVER: type:" << packetType;
+            qDebug() << Tools::getTime() << "SERVER: filePath:" << filePath;
         }
 
-        if (packetType == PacketType::TYPE_MSG)
-        {
-            //
+
+        //====================================================
+        // Получение fileSize
+
+        if (!fileSize) {
+            stream.startTransaction();
+            stream >> fileSize;
+            if (!stream.commitTransaction()) {
+                qDebug() << Tools::getTime() << "SERVER: fileSize - FAIL commitTransaction";
+                return;
+            }
+            qDebug() << Tools::getTime() << "SERVER: fileSize:" << fileSize;
         }
-        else if (packetType == PacketType::TYPE_FILE)
+
+        //====================================================
+        // Получение файла
+
+        if (sizeReceivedData != fileSize)
         {
-            //====================================================
-            // Получение filePath
+            filePath = this->fileCopy; // временная замена имени файла
+            QFile file(filePath);
+            file.open(QFile::Append);
 
-            if (filePath.isEmpty()) {
-                stream.startTransaction();
-                stream >> filePath;
-                if (!stream.commitTransaction()) {
-                    qDebug() << Tools::getTime() << "SERVER: filePath - FAIL commitTransaction";
-                    return;
-                }
-                qDebug() << Tools::getTime() << "SERVER: filePath:" << filePath;
-            }
-
-
-            //====================================================
-            // Получение fileSize
-
-            if (!fileSize) {
-                stream.startTransaction();
-                stream >> fileSize;
-                if (!stream.commitTransaction()) {
-                    qDebug() << Tools::getTime() << "SERVER: fileSize - FAIL commitTransaction";
-                    return;
-                }
-                qDebug() << Tools::getTime() << "SERVER: fileSize:" << fileSize;
-            }
-
-            //====================================================
-            // Получение файла
-
-            if (sizeReceivedData != fileSize)
+            // Работа с файлом в цикле "пока в сокете есть данные"
+            while (!stream.atEnd())
             {
-                filePath = this->fileCopy; // временная замена имени файла
-                QFile file(filePath);
-                file.open(QFile::Append);
+                //====================================================
+                // Получение tmpBlock
 
-                // Работа с файлом в цикле "пока в сокете есть данные"
-                while (!stream.atEnd())
-                {
-                    //====================================================
-                    // Получение tmpBlock
-
-                    stream.startTransaction();
-                    stream >> tmpBlock;
-                    if (!stream.commitTransaction()) {
-//                        qDebug() << Tools::getTime() << "SERVER: tmpBlock - FAIL commitTransaction";
-                        break;
-                    }
-
-                    qint64 toFile = file.write(tmpBlock);
-//                    qDebug() << Tools::getTime() << "SERVER: toFile    : " << toFile;
-
-                    sizeReceivedData += toFile;
-                    countSend++;
-//                    qDebug() << Tools::getTime() << "SERVER: countSend: " << countSend;
-//                    qDebug() << Tools::getTime() << "SERVER: sizeReceivedData: " << sizeReceivedData;
-//                    qDebug() << Tools::getTime() << "SERVER: -------------------------------------------------" << endl;
-
-                    tmpBlock.clear();
-
-                    if (sizeReceivedData == fileSize) {
-                        qDebug() << Tools::getTime() << "SERVER: sizeReceivedData END: " << sizeReceivedData;
-                        qDebug() << Tools::getTime() << "SERVER fileSize ORIG:" << fileSize;
-                        qDebug() << Tools::getTime() << "SERVER: countSend FINAL: " << countSend;
-                        break;
-                    }
-
-                } // while (!stream.atEnd())
-
-                file.close();
-
-            } // if (sizeReceivedData != fileSize)
-
-            if (sizeReceivedData != fileSize)
-                return;
-
-            //====================================================
-            // Получение testStr
-
-            if (testStr.isEmpty()) {
                 stream.startTransaction();
-                stream >> testStr;
+                stream >> tmpBlock;
                 if (!stream.commitTransaction()) {
-                    qDebug() << Tools::getTime() << "SERVER: testStr - FAIL commitTransaction";
-                    return;
+                    //                        qDebug() << Tools::getTime() << "SERVER: tmpBlock - FAIL commitTransaction";
+                    break;
                 }
-                qDebug() << Tools::getTime() << "SERVER: testStr:" << testStr;
+
+                qint64 toFile = file.write(tmpBlock);
+                //                    qDebug() << Tools::getTime() << "SERVER: toFile    : " << toFile;
+
+                sizeReceivedData += toFile;
+                countSend++;
+                //                    qDebug() << Tools::getTime() << "SERVER: countSend: " << countSend;
+                //                    qDebug() << Tools::getTime() << "SERVER: sizeReceivedData: " << sizeReceivedData;
+                //                    qDebug() << Tools::getTime() << "SERVER: -------------------------------------------------" << endl;
+
+                tmpBlock.clear();
+
+                if (sizeReceivedData == fileSize) {
+                    qDebug() << Tools::getTime() << "SERVER: sizeReceivedData END: " << sizeReceivedData;
+                    qDebug() << Tools::getTime() << "SERVER fileSize ORIG:" << fileSize;
+                    qDebug() << Tools::getTime() << "SERVER: countSend FINAL: " << countSend;
+                    break;
+                }
+
+            } // while (!stream.atEnd())
+
+            file.close();
+
+        } // if (sizeReceivedData != fileSize)
+
+        if (sizeReceivedData != fileSize)
+            return;
+
+        //====================================================
+        // Получение testStr
+
+        if (testStr.isEmpty()) {
+            stream.startTransaction();
+            stream >> testStr;
+            if (!stream.commitTransaction()) {
+                qDebug() << Tools::getTime() << "SERVER: testStr - FAIL commitTransaction";
+                return;
             }
+            qDebug() << Tools::getTime() << "SERVER: testStr:" << testStr;
+        }
 
-            qDebug() << Tools::getTime() << "SERVER: END - bytesAvailable:" << mTcpSocket->bytesAvailable();
+        qDebug() << Tools::getTime() << "SERVER: END - bytesAvailable:" << mTcpSocket->bytesAvailable();
 
-            // Очистка переменных
-            filePath.clear();
-            fileSize = 0;
-            tmpBlock.clear();
-            sizeReceivedData = 0;
-            testStr.clear();
-            countSend = 0;
+        // Очистка переменных
+        filePath.clear();
+        fileSize = 0;
+        tmpBlock.clear();
+        sizeReceivedData = 0;
+        testStr.clear();
+        countSend = 0;
 
-        } // else if (packetType == PacketType::TYPE_FILE)
+    } // else if (packetType == PacketType::TYPE_FILE)
 
-        packetType = PacketType::TYPE_NONE;
+    packetType = PacketType::TYPE_NONE;
 
-//    } // while (!mTcpSocket->atEnd())
+    exit(0);
 }
 
 
@@ -208,183 +206,142 @@ void MyTcpServer::slotReadyRead_block()
     QDataStream stream(mTcpSocket);
     stream.setVersion(QDataStream::Qt_DefaultCompiledVersion);
 
-    forever
-    {
-        qDebug() << Tools::getTime() << "SERVER: forever -------: bytesAvailable" << mTcpSocket->bytesAvailable();
+    qDebug() << Tools::getTime() << "SERVER: forever -------: bytesAvailable" << mTcpSocket->bytesAvailable();
 
-//        if (!mTcpSocket->bytesAvailable()) {
+    // Считывание PacketType
+    forever {
+        stream.startTransaction();
+        stream >> packetType;
+        if (!stream.commitTransaction()) {
+            qDebug() << Tools::getTime() << "SERVER: packetType - FAIL commitTransaction";
             if (!mTcpSocket->waitForReadyRead(1000)) {
-                qDebug() << Tools::getTime() << "SERVER: ERROR! readyRead timeout - forever!!!";
-                continue;
+                qDebug() << Tools::getTime() << "SERVER: ERROR! readyRead timeout - packetType!!!";
             }
-//        }
+            continue;
+        }
+        qDebug() << Tools::getTime() << "SERVER: type:" << packetType;
+        break;
+    }
 
-        // Считывание PacketType
-        if (packetType == PacketType::TYPE_NONE) {
+    if (packetType == PacketType::TYPE_MSG)
+    {
+        //
+    }
+    else if (packetType == PacketType::TYPE_FILE)
+    {
+        //====================================================
+        // Получение filePath
+
+        forever {
             stream.startTransaction();
-            stream >> packetType;
+            stream >> filePath;
             if (!stream.commitTransaction()) {
-                qDebug() << Tools::getTime() << "SERVER: packetType - FAIL commitTransaction";
+                qDebug() << Tools::getTime() << "SERVER: filePath - FAIL commitTransaction";
+                if (!mTcpSocket->waitForReadyRead(1000)) {
+                    qDebug() << Tools::getTime() << "SERVER: ERROR! readyRead timeout - filePath!!!";
+                }
                 continue;
             }
-            qDebug() << Tools::getTime() << "SERVER: type:" << packetType;
+            qDebug() << Tools::getTime() << "SERVER: filePath:" << filePath;
+            break;
         }
 
-        if (packetType == PacketType::TYPE_MSG)
-        {
-            //
+
+        //====================================================
+        // Получение fileSize
+
+        forever {
+            stream.startTransaction();
+            stream >> fileSize;
+            if (!stream.commitTransaction()) {
+                qDebug() << Tools::getTime() << "SERVER: filePath - FAIL commitTransaction";
+                if (!mTcpSocket->waitForReadyRead(1000)) {
+                    qDebug() << Tools::getTime() << "SERVER: ERROR! readyRead timeout - fileSize!!!";
+                }
+                continue;
+            }
+            qDebug() << Tools::getTime() << "SERVER: fileSize:" << fileSize;
+            break;
         }
-        else if (packetType == PacketType::TYPE_FILE)
+
+        //====================================================
+        // Получение файла
+
+        filePath = this->fileCopy; // временная замена имени файла
+        QFile file(filePath);
+        file.open(QFile::Append);
+
+        qDebug() << Tools::getTime() << "SERVER: FILE bytesAvailable" << mTcpSocket->bytesAvailable();
+
+//        while (sizeReceivedData < fileSize)
+        forever
         {
-            //====================================================
-            // Получение filePath
+            qDebug() << Tools::getTime() << "SERVER: FILE forever -------: bytesAvailable" << mTcpSocket->bytesAvailable();
 
-            if (filePath.isEmpty()) {
-                stream.startTransaction();
-                stream >> filePath;
-                if (!stream.commitTransaction()) {
-                    qDebug() << Tools::getTime() << "SERVER: filePath - FAIL commitTransaction";
-                    continue;
+            stream.startTransaction();
+            stream >> tmpBlock;
+            if (!stream.commitTransaction()) {
+                qDebug() << Tools::getTime() << "SERVER: tmpBlock - FAIL commitTransaction";
+                if (!mTcpSocket->waitForReadyRead(1000)) {
+                    qDebug() << Tools::getTime() << "SERVER: ERROR! readyRead timeout - tmpBlock!!!";
                 }
-                qDebug() << Tools::getTime() << "SERVER: filePath:" << filePath;
+                continue;
             }
 
+            qint64 toFile = file.write(tmpBlock);
+            qDebug() << Tools::getTime() << "SERVER: toFile    : " << toFile;
 
-            //====================================================
-            // Получение fileSize
+            sizeReceivedData += toFile;
+            countSend++;
+            qDebug() << Tools::getTime() << "SERVER: countSend: " << countSend;
+            qDebug() << Tools::getTime() << "SERVER: sizeReceivedData: " << sizeReceivedData;
+            qDebug() << Tools::getTime() << "SERVER: ------------------------FILE write block-------------------------" << endl;
 
-            if (!fileSize) {
-                stream.startTransaction();
-                stream >> fileSize;
-                if (!stream.commitTransaction()) {
-                    qDebug() << Tools::getTime() << "SERVER: fileSize - FAIL commitTransaction";
-                    continue;
-                }
-                qDebug() << Tools::getTime() << "SERVER: fileSize:" << fileSize;
-            }
-
-            //====================================================
-            // Получение файла
-
-            if (sizeReceivedData != fileSize)
-            {
-                filePath = this->fileCopy; // временная замена имени файла
-                QFile file(filePath);
-                file.open(QFile::Append);
-
-                qDebug() << Tools::getTime() << "SERVER: FILE bytesAvailable" << mTcpSocket->bytesAvailable();
-
-                while (sizeReceivedData < fileSize)
-                {
-                    qDebug() << Tools::getTime() << "SERVER: FILE while -------: bytesAvailable" << mTcpSocket->bytesAvailable();
-
-//                    if (!mTcpSocket->bytesAvailable()) {
-                        if (!mTcpSocket->waitForReadyRead(1000)) {
-                            qDebug() << Tools::getTime() << "SERVER: ERROR! readyRead timeout - forever!!!";
-                            continue;
-                        }
-//                    }
-
-                    while (!stream.atEnd())
-                    {
-                        stream.startTransaction();
-                        stream >> tmpBlock;
-                        if (!stream.commitTransaction()) {
-                            qDebug() << Tools::getTime() << "SERVER: tmpBlock - FAIL commitTransaction";
-                            break;
-                        }
-
-                        qint64 toFile = file.write(tmpBlock);
-                        qDebug() << Tools::getTime() << "SERVER: toFile    : " << toFile;
-
-                        sizeReceivedData += toFile;
-                        countSend++;
-                        qDebug() << Tools::getTime() << "SERVER: countSend: " << countSend;
-                        qDebug() << Tools::getTime() << "SERVER: sizeReceivedData: " << sizeReceivedData;
-                        qDebug() << Tools::getTime() << "SERVER: -------------------------------------------------" << endl;
-
-                        tmpBlock.clear();
-
-                        if (sizeReceivedData == fileSize) {
-                            qDebug() << Tools::getTime() << "SERVER: sizeReceivedData END: " << sizeReceivedData;
-                            qDebug() << Tools::getTime() << "SERVER: fileSize ORIG:" << fileSize;
-                            qDebug() << Tools::getTime() << "SERVER: countSend FINAL: " << countSend;
-                            break;
-                        }
-                    }
-                }
-
-//                // Работа с файлом в цикле "пока в сокете есть данные"
-//                while (!stream.atEnd())
-//                {
-//                    qDebug() << Tools::getTime() << "SERVER: while (!stream.atEnd())";
-//                    //====================================================
-//                    // Получение tmpBlock
-
-//                    stream.startTransaction();
-//                    stream >> tmpBlock;
-//                    if (!stream.commitTransaction()) {
-//                        qDebug() << Tools::getTime() << "SERVER: tmpBlock - FAIL commitTransaction";
-//                        break;
-//                    }
-
-//                    qint64 toFile = file.write(tmpBlock);
-//                    qDebug() << Tools::getTime() << "SERVER: toFile    : " << toFile;
-
-//                    sizeReceivedData += toFile;
-//                    countSend++;
-//                    qDebug() << Tools::getTime() << "SERVER: countSend: " << countSend;
-//                    qDebug() << Tools::getTime() << "SERVER: sizeReceivedData: " << sizeReceivedData;
-//                    qDebug() << Tools::getTime() << "SERVER: -------------------------------------------------" << endl;
-
-//                    tmpBlock.clear();
-
-//                    if (sizeReceivedData == fileSize) {
-//                        qDebug() << Tools::getTime() << "SERVER: sizeReceivedData END: " << sizeReceivedData;
-//                        qDebug() << Tools::getTime() << "SERVER: fileSize ORIG:" << fileSize;
-//                        qDebug() << Tools::getTime() << "SERVER: countSend FINAL: " << countSend;
-//                        break;
-//                    }
-
-//                } // while (!stream.atEnd())
-
-                file.close();
-                qDebug() << Tools::getTime() << "SERVER: file.close()";
-
-            } // if (sizeReceivedData != fileSize)
-
-//            if (sizeReceivedData != fileSize)
-//                continue;
-
-            //====================================================
-            // Получение testStr
-
-            if (testStr.isEmpty()) {
-                stream.startTransaction();
-                stream >> testStr;
-                if (!stream.commitTransaction()) {
-                    qDebug() << Tools::getTime() << "SERVER: testStr - FAIL commitTransaction";
-                    continue;
-                }
-                qDebug() << Tools::getTime() << "SERVER: testStr:" << testStr;
-            }
-
-            qDebug() << Tools::getTime() << "SERVER: END - bytesAvailable:" << mTcpSocket->bytesAvailable();
-
-            // Очистка переменных
-            filePath.clear();
-            fileSize = 0;
             tmpBlock.clear();
-            sizeReceivedData = 0;
-            testStr.clear();
-            countSend = 0;
 
-        } // else if (packetType == PacketType::TYPE_FILE)
+            if (sizeReceivedData == fileSize) {
+                qDebug() << Tools::getTime() << "SERVER: sizeReceivedData END: " << sizeReceivedData;
+                qDebug() << Tools::getTime() << "SERVER: fileSize ORIG:" << fileSize;
+                qDebug() << Tools::getTime() << "SERVER: countSend FINAL: " << countSend;
+                break;
+            }
+        }
 
-        packetType = PacketType::TYPE_NONE;
-        break; // вот теперь выходим из бесконечного цикла
+        file.close();
+        qDebug() << Tools::getTime() << "SERVER: file.close()";
 
-    } // forever
+        //====================================================
+        // Получение testStr
+
+        forever {
+            stream.startTransaction();
+            stream >> testStr;
+            if (!stream.commitTransaction()) {
+                qDebug() << Tools::getTime() << "SERVER: testStr - FAIL commitTransaction";
+                if (!mTcpSocket->waitForReadyRead(1000)) {
+                    qDebug() << Tools::getTime() << "SERVER: ERROR! readyRead timeout - testStr!!!";
+                }
+                continue;
+            }
+            qDebug() << Tools::getTime() << "SERVER: testStr:" << testStr;
+            break;
+        }
+
+        qDebug() << Tools::getTime() << "SERVER: END - bytesAvailable:" << mTcpSocket->bytesAvailable();
+
+        // Очистка переменных
+        filePath.clear();
+        fileSize = 0;
+        tmpBlock.clear();
+        sizeReceivedData = 0;
+        testStr.clear();
+        countSend = 0;
+
+    } // else if (packetType == PacketType::TYPE_FILE)
+
+    packetType = PacketType::TYPE_NONE;
+
+    exit(0);
 
 } // MyTcpServer::slotReadyRead_block()
 

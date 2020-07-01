@@ -43,6 +43,7 @@ void TcpClient::slotConnected()
 void TcpClient::slotDisconnected()
 {
     qDebug() << "_CLIENT: slotDisconnected";
+    m_pTcpSocket->close();
 }
 
 void TcpClient::slotReadyRead()
