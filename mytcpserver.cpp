@@ -231,38 +231,24 @@ void MyTcpServer::slotReadyRead_block()
     {
         //====================================================
         // Получение filePath
-
-        forever {
-            stream.startTransaction();
-            stream >> filePath;
-            if (!stream.commitTransaction()) {
-                qDebug() << Tools::getTime() << "SERVER: filePath - FAIL commitTransaction";
-                if (!mTcpSocket->waitForReadyRead(1000)) {
-                    qDebug() << Tools::getTime() << "SERVER: ERROR! readyRead timeout - filePath!!!";
-                }
-                continue;
-            }
-            qDebug() << Tools::getTime() << "SERVER: filePath:" << filePath;
-            break;
-        }
-
-
-        //====================================================
         // Получение fileSize
 
         forever {
             stream.startTransaction();
+            stream >> filePath;
             stream >> fileSize;
             if (!stream.commitTransaction()) {
-                qDebug() << Tools::getTime() << "SERVER: filePath - FAIL commitTransaction";
+                qDebug() << Tools::getTime() << "SERVER: filePath, fileSize - FAIL commitTransaction";
                 if (!mTcpSocket->waitForReadyRead(1000)) {
-                    qDebug() << Tools::getTime() << "SERVER: ERROR! readyRead timeout - fileSize!!!";
+                    qDebug() << Tools::getTime() << "SERVER: ERROR! readyRead timeout - filePath, fileSize!!!";
                 }
                 continue;
             }
+            qDebug() << Tools::getTime() << "SERVER: filePath:" << filePath;
             qDebug() << Tools::getTime() << "SERVER: fileSize:" << fileSize;
             break;
         }
+
 
         //====================================================
         // Получение файла
