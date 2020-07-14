@@ -3,6 +3,8 @@
 
 #include <QString>
 
+#define TCP_READ_TIMEOUT 5000
+
 enum PacketType
 {
     TYPE_NONE = 0,

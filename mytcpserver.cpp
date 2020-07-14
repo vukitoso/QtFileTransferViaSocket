@@ -214,8 +214,9 @@ void MyTcpServer::slotReadyRead_block()
         stream >> packetType;
         if (!stream.commitTransaction()) {
             qDebug() << Tools::getTime() << "SERVER: packetType - FAIL commitTransaction";
-            if (!mTcpSocket->waitForReadyRead(1000)) {
+            if (!mTcpSocket->waitForReadyRead(TCP_READ_TIMEOUT)) {
                 qDebug() << Tools::getTime() << "SERVER: ERROR! readyRead timeout - packetType!!!";
+                return;
             }
             continue;
         }
@@ -239,8 +240,9 @@ void MyTcpServer::slotReadyRead_block()
             stream >> fileSize;
             if (!stream.commitTransaction()) {
                 qDebug() << Tools::getTime() << "SERVER: filePath, fileSize - FAIL commitTransaction";
-                if (!mTcpSocket->waitForReadyRead(1000)) {
+                if (!mTcpSocket->waitForReadyRead(TCP_READ_TIMEOUT)) {
                     qDebug() << Tools::getTime() << "SERVER: ERROR! readyRead timeout - filePath, fileSize!!!";
+                    return;
                 }
                 continue;
             }
@@ -268,8 +270,9 @@ void MyTcpServer::slotReadyRead_block()
             stream >> tmpBlock;
             if (!stream.commitTransaction()) {
                 qDebug() << Tools::getTime() << "SERVER: tmpBlock - FAIL commitTransaction";
-                if (!mTcpSocket->waitForReadyRead(1000)) {
+                if (!mTcpSocket->waitForReadyRead(TCP_READ_TIMEOUT)) {
                     qDebug() << Tools::getTime() << "SERVER: ERROR! readyRead timeout - tmpBlock!!!";
+                    return;
                 }
                 continue;
             }
@@ -304,8 +307,9 @@ void MyTcpServer::slotReadyRead_block()
             stream >> testStr;
             if (!stream.commitTransaction()) {
                 qDebug() << Tools::getTime() << "SERVER: testStr - FAIL commitTransaction";
-                if (!mTcpSocket->waitForReadyRead(1000)) {
+                if (!mTcpSocket->waitForReadyRead(TCP_READ_TIMEOUT)) {
                     qDebug() << Tools::getTime() << "SERVER: ERROR! readyRead timeout - testStr!!!";
+                    return;
                 }
                 continue;
             }
